@@ -81,7 +81,7 @@
 #define APP_TIMER_PRESCALER              0                                           /**< Value of the RTC1 PRESCALER register. */
 //连接参数
 #define MIN_CONN_INTERVAL                MSEC_TO_UNITS(15, UNIT_1_25_MS)             /**< Minimum acceptable connection interval (0.4 seconds). */
-#define MAX_CONN_INTERVAL                MSEC_TO_UNITS(30, UNIT_1_25_MS)             /**< Maximum acceptable connection interval (0.65 second). */
+#define MAX_CONN_INTERVAL                MSEC_TO_UNITS(20, UNIT_1_25_MS)             /**< Maximum acceptable connection interval (0.65 second). */
 #define SLAVE_LATENCY                    0                                           /**< Slave latency. */
 #define CONN_SUP_TIMEOUT                 (4 * 100)                                   /**< Connection supervisory timeout (4 seconds). */
 //连接间隔更新参数
@@ -111,10 +111,10 @@ STATIC_ASSERT(IS_SRVC_CHANGED_CHARACT_PRESENT);                                 
 static ble_dfu_t                         m_dfus;                                     /**< Structure used to identify the DFU service. */
 #endif // BLE_DFU_APP_SUPPORT
 //服务变量
-extern ble_bas_t                         m_bas;                                      /**< Structure used to identify the battery service. */
-extern ble_com_t                         m_com;                                      /**< Structure to identify the Nordic UART Service. */
+//extern ble_bas_t                         m_bas;                                      /**< Structure used to identify the battery service. */
+//extern ble_com_t                         m_com;                                      /**< Structure to identify the Nordic UART Service. */
 extern ble_eeg_t                         m_eeg;                                      /**< Structure used to identify the heart rate service. */
-extern ble_conn_t                        m_conn;                                     /**< Structure to identify the Nordic UART Service. */
+//extern ble_conn_t                        m_conn;                                     /**< Structure to identify the Nordic UART Service. */
 uint16_t                                 m_conn_handle;                              /**< Handle of the current connection. */
 static dm_application_instance_t         m_app_handle;                               /**< Application identifier allocated by device manager. */
 //eeg数据传输变量与标志位
@@ -143,7 +143,7 @@ extern nrf_drv_wdt_channel_id            m_channel_id;
 //广播状态
 bool ble_is_adv = false;                 //设备是否开启广播
 //广播UUID
-#define BLE_UUID_Naptime_Profile 0xFF00
+#define BLE_UUID_Naptime_Profile 0xFF30
 static ble_uuid_t m_adv_uuids[] = {{BLE_UUID_Naptime_Profile, BLE_UUID_TYPE_VENDOR_BEGIN}}; /**< Universally unique service identifiers. */
 
 /**@brief Function for the GAP initialization.
@@ -281,19 +281,19 @@ static void reset_prepare(void)
 static void services_init(void)
 {
     uint32_t         err_code;
-	  ble_com_init_t   com_init;
-	  ble_conn_init_t  conn_init;
+//	  ble_com_init_t   com_init;
+//	  ble_conn_init_t  conn_init;
     ble_eeg_init_t   eeg_init;
 
-	  memset(&com_init, 0, sizeof(com_init));
-    com_init.data_handler = NULL;   
-    err_code = ble_com_init(&m_com, &com_init);
-    APP_ERROR_CHECK(err_code);
+//	  memset(&com_init, 0, sizeof(com_init));
+//    com_init.data_handler = NULL;   
+//    err_code = ble_com_init(&m_com, &com_init);
+//    APP_ERROR_CHECK(err_code);
 
-	  memset(&conn_init, 0, sizeof(conn_init));
-    conn_init.data_handler = NULL;   
-    err_code = ble_conn_init(&m_conn, &conn_init);
-    APP_ERROR_CHECK(err_code);
+//	  memset(&conn_init, 0, sizeof(conn_init));
+//    conn_init.data_handler = NULL;   
+//    err_code = ble_conn_init(&m_conn, &conn_init);
+//    APP_ERROR_CHECK(err_code);
 
     memset(&eeg_init, 0, sizeof(eeg_init));
     eeg_init.evt_handler = NULL;
@@ -301,9 +301,9 @@ static void services_init(void)
     APP_ERROR_CHECK(err_code);
 
     // Initialize Battery Service.
-    ble_battory_serv_init();
+//    ble_battory_serv_init();
     // Initialize Device Information Service.
-    ble_devinfo_serv_init();
+//    ble_devinfo_serv_init();
 		
 #ifdef BLE_DFU_APP_SUPPORT
     /** @snippet [DFU BLE Service initialization] */
@@ -506,7 +506,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
 						else                         //正常工作模式
 						{
 				        connection_buttons_configure();	  
-				        connects_timer_start();
+//				        connects_timer_start();
 								LED_timeout_restart();
 								if(bat_vol_pre < bat_vol_pre_work)    //电量低于使用电压
 								{
@@ -519,6 +519,8 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
 										APP_ERROR_CHECK(err_code);	
 								}
 						}
+						Global_connected_state = true;
+						ads1291_init();
             break;
 
           case BLE_GAP_EVT_DISCONNECTED:
@@ -533,17 +535,17 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
 					  err_code = bsp_led_indication(BSP_INDICATE_IDLE);
             APP_ERROR_CHECK(err_code);
 						Global_connected_state = false;
-				    m_bas.is_battery_notification_enabled = false;
+//				    m_bas.is_battery_notification_enabled = false;
 				    m_eeg.is_eeg_notification_enabled = false;
 				    m_eeg.is_state_notification_enabled = false;
-				    m_com.is_com_notification_enabled = false;
-				    m_conn.is_Shakehands_notification_enabled = false;
-				    m_conn.is_state_notification_enabled = false;
+//				    m_com.is_com_notification_enabled = false;
+//				    m_conn.is_Shakehands_notification_enabled = false;
+//				    m_conn.is_state_notification_enabled = false;
             if(ads1291_is_init == true)
 						{
 					   	 ADS1291_disable();
 						}
-					  connects_timer_stop();
+//					  connects_timer_stop();
             break;
 
           case BLE_GATTS_EVT_TIMEOUT:
@@ -582,9 +584,9 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
  */
 static void ble_evt_dispatch(ble_evt_t * p_ble_evt)
 {
-    ble_bas_on_ble_evt(&m_bas, p_ble_evt);
-	  ble_com_on_ble_evt(&m_com, p_ble_evt);
-	  ble_conn_on_ble_evt(&m_conn, p_ble_evt);
+//    ble_bas_on_ble_evt(&m_bas, p_ble_evt);
+//	  ble_com_on_ble_evt(&m_com, p_ble_evt);
+//	  ble_conn_on_ble_evt(&m_conn, p_ble_evt);
     ble_eeg_on_ble_evt(&m_eeg, p_ble_evt);
     on_ble_evt(p_ble_evt);
     dm_ble_evt_handler(p_ble_evt);

@@ -9,6 +9,7 @@ static double bat_vol;                  //实测电量
 uint8_t bat_vol_pre;                    //当前电量百分比
 uint8_t bat_vol_pre_work = 57;          //低于3.67V(57%)提示低电量
 uint8_t send_bat_data = 0;              //有数据发送置1
+uint8_t battery_level_last = 0;
 
 extern bool Into_factory_test_mode;     //是否进入工厂测试模式
 extern bool Global_connected_state;     //连接+握手成功标志
@@ -99,40 +100,14 @@ void battery_level_update(void)
 						bat_vol = bat_vol / VOLTAGE_AVG_NUM;
 						bat_vol_pre = (uint8_t)((bat_vol - 3.10 ) * 100);         //电量百分比  3.1-4.1
 						
-						bat_vol_pre = min(bat_vol_pre,m_bas.battery_level_last);  //取与上次计算数据两者中较小的数，避免手机端数据会增大
-						m_bas.battery_level_last = bat_vol_pre;
+						bat_vol_pre = min(bat_vol_pre,battery_level_last);  //取与上次计算数据两者中较小的数，避免手机端数据会增大
+						battery_level_last = bat_vol_pre;
 						
 						if(bat_vol_pre > 100)                                     //最大显示电量100%
 							 bat_vol_pre = 100;
 						
-						err_code = update_database(&m_bas,bat_vol_pre);
-						APP_ERROR_CHECK(err_code);
- 
-						if (count >= 6 && m_bas.is_battery_notification_enabled)  //30s上传一次电池电量值
-						{	
-                count = 0;
-								send_bat_data = 1;
-								err_code = ble_bas_battery_level_update(&m_bas, bat_vol_pre,1);
-								if(RTT_PRINT)
-								{
-									SEGGER_RTT_printf(0,"err_code4:%x\r",err_code);		
-								}								
-								if (err_code == BLE_ERROR_NO_TX_PACKETS ||
-									err_code == NRF_ERROR_INVALID_STATE || 
-									err_code == BLE_ERROR_GATTS_SYS_ATTR_MISSING)
-									{
-										 return;
-									}
-								else if (err_code == NRF_SUCCESS) 
-								{
-									send_bat_data = 0;
-								}
-								else 
-								{
-									APP_ERROR_CHECK(err_code);
-								}
-						}		
-						
+						battery_level_last = bat_vol_pre;
+	
 						if(bat_vol_pre < 45)                                //低于3.55V（45%）,关机
 						{
 							  Global_connected_state = false;
@@ -145,8 +120,6 @@ void battery_level_update(void)
 //开机电池电压Check，低电压不能开机-----运行一次
 void Power_Check(void)
 {
-    uint32_t err_code;
-	
 	  double bat_V[3] = {0};
 	  nrf_saadc_value_t  ADC_value = 0;	           //ADC读取数据
 
@@ -170,8 +143,7 @@ void Power_Check(void)
 			SEGGER_RTT_printf(0," bat_vol_pre:%d \n",bat_vol_pre);
 	  }
 
-    err_code = update_database(&m_bas,bat_vol_pre);
-		APP_ERROR_CHECK(err_code);
+    battery_level_last = bat_vol_pre;
 		
 		if(bat_vol_pre < 40)               //低于3.5V(40%)无法开机
 		{
